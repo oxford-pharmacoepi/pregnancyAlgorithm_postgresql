@@ -2,12 +2,12 @@ select a.category, a.gest_value, a.person_id, a.start_date, a.type, a.value_as_s
 into #raw_events
 from
 (
-	select b.category, b.gest_value, person_id, a.CONDITION_CONCEPT_ID as CONCEPT_ID,  condition_start_date as start_date,  'Cond' as type, ' ' as value_as_string,null as value_as_number
+	select b.category, b.gest_value, person_id, a.CONDITION_CONCEPT_ID as CONCEPT_ID,  condition_start_date as start_date,  'Cond' as type, ' ' as value_as_string,cast(null as int)  as value_as_number
 	from @cdmDatabaseSchema.condition_occurrence a
 	join @resultsDatabaseSchema.pregnancy_concepts b on a.CONDITION_CONCEPT_ID=b.concept_id
 
 	union all
-	select b.category, b.gest_value, person_id, a.PROCEDURE_CONCEPT_ID as CONCEPT_ID, procedure_date as start_date, 'Proc' as type, ' ' as value_as_string,null as value_as_number
+	select b.category, b.gest_value, person_id, a.PROCEDURE_CONCEPT_ID as CONCEPT_ID, procedure_date as start_date, 'Proc' as type, ' ' as value_as_string,cast(null as int)  as value_as_number
 	from @cdmDatabaseSchema.procedure_occurrence a
 	join @resultsDatabaseSchema.pregnancy_concepts b on a.PROCEDURE_CONCEPT_ID=b.concept_id
 
