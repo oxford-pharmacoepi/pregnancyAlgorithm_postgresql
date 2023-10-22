@@ -101,7 +101,7 @@ clean <- function(connectionDetails, resultsDatabaseSchema) {
 #' @export
 execute <- function(connectionDetails, 
                     cdmDatabaseSchema, 
-                    resultsDatabaseSchema = cdmDatabaseSchema, 
+                    resultsDatabaseSchema, 
                     sqlOnly = FALSE) {
   
   executeSqlSteps <- function(sqlScript) {

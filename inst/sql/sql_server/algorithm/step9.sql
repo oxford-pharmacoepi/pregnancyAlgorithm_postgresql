@@ -32,9 +32,9 @@ cteLMPStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK) 
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		WHERE p.Category = 'LMP'
 			and p.EVENT_DATE between
-				case when dateadd(d, cast(lb.retry as int) , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int) , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn = 1
 ),
@@ -43,17 +43,17 @@ cteGestStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK)
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, 2 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,-1 * cast(p.gest_value as int) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + (-1 * p.gest_value*INTERVAL'1 day') + 1*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE desc) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.person_id = e.person_id and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		where p.CATEGORY = 'GEST'
-			and dateadd(d,-1 * cast(p.gest_value as int) + 1, p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int) , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int) , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + (-1 * p.gest_value*INTERVAL'1 day') + 1*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn=1
 ),
@@ -62,17 +62,17 @@ cteOvulStartDates (person_id, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK)
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, 3 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-14) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + (-14*INTERVAL'1 day') + 1*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		where p.CATEGORY = 'OVUL'
-			and dateadd(d,(-14) + 1, p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + (-14*INTERVAL'1 day') + 1*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn=1
 ),
@@ -81,17 +81,17 @@ cteOvul2StartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, 4 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-14) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + ((-14)*INTERVAL'1 day') + 1*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = pod.EVENT_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		where p.CATEGORY = 'OVUL2'
-			and dateadd(d,(-14) + 1, p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + ((-14)*INTERVAL'1 day') + 1*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry *INTERVAL'1 day' ) > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM *INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn=1
 ),
@@ -100,17 +100,17 @@ cteNuchalUltrasoundStartDates(PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY,
 	select Q.PERSON_ID, Q.EVENT_ID, Q.EPISODE_START_DATE, Q.CATEGORY, 6 as DATE_RANK
 	from
 	(
-		select e.person_id, e.EVENT_ID as EVENT_ID, dateadd(d,-89,p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.person_id, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + (-89)*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE asc) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		WHERE p.Category = 'NULS'
-			and dateadd(d,-89,p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + (-89)*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where Q.rn = 1
 ),
@@ -119,17 +119,17 @@ cteAFPStartDates(PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK) a
 	select Q.PERSON_ID, Q.EVENT_ID, Q.EPISODE_START_DATE, Q.CATEGORY, 7 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,-123,p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + (-123)*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE asc) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		WHERE p.Category = 'AFP'
-			and dateadd(d,-123,p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + (-123) *INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where Q.rn = 1
 ),
@@ -138,17 +138,17 @@ cteAMENStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RANK)
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, 80 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-56) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + ((-56)*INTERVAL'1 day') + 1*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		where p.CATEGORY = 'AMEN'
-			and dateadd(d,(-56) + 1, p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + ((-56)*INTERVAL'1 day') + 1*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry *INTERVAL'1 day' ) > ( e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn=1
 ),
@@ -157,17 +157,17 @@ ctePOptumStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RAN
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, 90 as DATE_RANK
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-56) + 1, p.EVENT_DATE) as EPISODE_START_DATE, p.Category,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + ((-56)*INTERVAL'1 day') + 1*INTERVAL'1 day') as EPISODE_START_DATE, p.Category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE) as rn
 		from cteOutcomeEvents e
 		JOIN @resultsDatabaseSchema.term_durations lb on e.Category = lb.CATEGORY
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		where p.CATEGORY in  ('UP')
-			and dateadd(d,(-56) + 1, p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + ((-56)*INTERVAL'1 day') + 1*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn=1
 ),
@@ -176,7 +176,7 @@ ctePCONFStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY) as
 	select PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY
 	from
 	(
-		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, dateadd(d,(-56) + 1, p.EVENT_DATE) as EPISODE_START_DATE,
+		select e.PERSON_ID, e.EVENT_ID as EVENT_ID, (p.EVENT_DATE + ((-56)*INTERVAL'1 day') + 1*INTERVAL'1 day') as EPISODE_START_DATE,
 		  'PUSHBACK' as category,
 			row_number() over (partition by e.person_id, e.event_id order by p.EVENT_DATE asc) as rn
 		from cteOutcomeEvents e
@@ -184,10 +184,10 @@ ctePCONFStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY) as
 		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		WHERE p.Category in  ('PCONF','AGP','PCOMP', 'TA')
-			and dateadd(d,(-56) + 1, p.EVENT_DATE) between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+			and (p.EVENT_DATE + ((-56)*INTERVAL'1 day') + 1*INTERVAL'1 day') between
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn = 1
 ),
@@ -205,9 +205,9 @@ cteCONTRAStartDates (PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY) as
 		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
 		WHERE p.Category in  ('CONTRA')
 			and p.EVENT_DATE between
-				case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then dateadd(d, cast(lb.retry as int) , pod.PRIOR_OUTCOME_DATE)
-				else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-				and dateadd(d, -1* cast(lb.MIN_TERM as int), e.EVENT_DATE)
+				case when (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day') > (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
+				else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+				and (e.EVENT_DATE + (-1)* lb.MIN_TERM*INTERVAL'1 day')
 	) Q
 	where rn = 1
 ),
@@ -216,14 +216,16 @@ cteDefaultStartDates(PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RAN
   select PERSON_ID, EVENT_ID, cast(EPISODE_START_DATE as date), CATEGORY, DATE_RANK
   from
   (
-  	select c.PERSON_ID, c.EVENT_ID, case when dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE) > dateadd(d,(-1 * (
+  	select c.PERSON_ID, c.EVENT_ID, case when (pod.PRIOR_OUTCOME_DATE + lb.retry *INTERVAL'1 day' ) > dateadd(d,(-1 * (
   		case when PreCount > 0 then g.PreTerm
   		when FullCount > 0 then g.FullTerm
-  		else g.NoData end)),EVENT_DATE) then dateadd(d, cast(lb.retry as int)  , pod.PRIOR_OUTCOME_DATE)
+  		else g.NoData end)
+  		),EVENT_DATE) then (pod.PRIOR_OUTCOME_DATE + lb.retry*INTERVAL'1 day')
   		else  dateadd(d,(-1 * (
   		case when PreCount > 0 then g.PreTerm
   		when FullCount > 0 then g.FullTerm
-  		else g.NoData end)),EVENT_DATE) end as EPISODE_START_DATE,
+  		else g.NoData end)
+  		),EVENT_DATE) end as EPISODE_START_DATE,
   		case when PreCount > 0 then 'PREM'
   		      else 'DEFAULT' end as CATEGORY,
   			 99 as date_rank
@@ -239,9 +241,9 @@ cteDefaultStartDates(PERSON_ID, EVENT_ID, EPISODE_START_DATE, CATEGORY, DATE_RAN
   		JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = e.PERSON_ID and pod.EVENT_ID = e.EVENT_ID
   		JOIN #pregnancy_events p on e.PERSON_ID = p.PERSON_ID
   		where p.EVENT_DATE between
-  			case when pod.PRIOR_OUTCOME_DATE > dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) then pod.PRIOR_OUTCOME_DATE
-  			else dateadd(d, -1* cast(lb.MAX_TERM as int), e.EVENT_DATE) end
-  			and dateadd(d,30,e.EVENT_DATE)
+  			case when pod.PRIOR_OUTCOME_DATE > (e.EVENT_DATE + (-1)* lb.MAX_TERM *INTERVAL'1 day') then pod.PRIOR_OUTCOME_DATE
+  			else (e.EVENT_DATE + (-1)* lb.MAX_TERM*INTERVAL'1 day') end
+  			and (e.EVENT_DATE + 30*INTERVAL'1 day')
   		GROUP BY e.PERSON_ID, e.EVENT_ID, e.EVENT_DATE, e.CATEGORY
   	) C JOIN @resultsDatabaseSchema.gest_est g on c.CATEGORY = g.CATEGORY
   	full outer JOIN ctePriorOutcomeDates pod on pod.PERSON_ID = c.PERSON_ID and pod.EVENT_ID = c.EVENT_ID
@@ -362,7 +364,7 @@ join
 			from #PregnancyEpisodesObs a
 			join  #pregnancy_events b on a.person_id=b.person_id
 			JOIN @resultsDatabaseSchema.term_durations d on a.OUTCOME_CATEGORY=d.category
-			where b.EVENT_DATE between dateadd(d,((-1 * d.MAX_TERM) + 1), a.EPISODE_END_DATE) and a.EPISODE_END_DATE
+			where b.EVENT_DATE between (a.EPISODE_END_DATE + ((-1) * d.MAX_TERM*INTERVAL'1 day') + 1*INTERVAL'1 day') and a.EPISODE_END_DATE
 		) c
 		group by person_id, rn
 	) d
