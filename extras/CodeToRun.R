@@ -55,4 +55,3 @@ cdm <- cdm_from_con(
 )
 
 cdm$motherTable <- tbl(db, in_schema("results","pregnancy_episodes"))
-
