@@ -40,6 +40,9 @@ password   <- Sys.getenv("DB_PASSWORD")
 port       <- Sys.getenv("DB_PORT")
 host       <- Sys.getenv("DB_HOST")
 
+library(CDMConnector)
+library(dplyr)
+
 db <- dbConnect(RPostgres::Postgres(),
                 dbname = server_dbi,
                 port = port,
