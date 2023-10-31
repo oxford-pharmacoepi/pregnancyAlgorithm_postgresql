@@ -1,4 +1,7 @@
 # Load libraries
+
+library("CDMConnector")
+library("dplyr")
 library("DatabaseConnector")
 library("here")
 
@@ -22,8 +25,8 @@ connectionDetails <-DatabaseConnector::createConnectionDetails(dbms = "postgresq
 
 
 targetDialect <-"postgresql"
-cdmDatabaseSchema <-"public_100k"
-vocabularyDatabaseSchema <-"public_100k"
+cdmDatabaseSchema <-"public"
+vocabularyDatabaseSchema <-"public"
 resultsDatabaseSchema <-"results"
 
 connection = connect(connectionDetails)
@@ -33,15 +36,10 @@ source("~/PregnancyAlgorithm/R/main.R")
 init (connectionDetails, resultsDatabaseSchema, useMppBulkLoad = FALSE)
 execute (connectionDetails, cdmDatabaseSchema, resultsDatabaseSchema)
 
+
+
 ## connect to a cdm instance
 server_dbi <- Sys.getenv("DB_SERVER_DBI_gold_202207")
-user       <- Sys.getenv("DB_USER")
-password   <- Sys.getenv("DB_PASSWORD")
-port       <- Sys.getenv("DB_PORT")
-host       <- Sys.getenv("DB_HOST")
-
-library(CDMConnector)
-library(dplyr)
 
 db <- dbConnect(RPostgres::Postgres(),
                 dbname = server_dbi,
@@ -53,7 +51,7 @@ db <- dbConnect(RPostgres::Postgres(),
 
 cdm <- cdm_from_con(
   db,
-  cdm_schema = "public_100k",
+  cdm_schema = "public",
   write_schema = "results"
 )
 
