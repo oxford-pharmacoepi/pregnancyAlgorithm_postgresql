@@ -25,8 +25,8 @@ connectionDetails <-DatabaseConnector::createConnectionDetails(dbms = "postgresq
 
 
 targetDialect <-"postgresql"
-cdmDatabaseSchema <-"public"
-vocabularyDatabaseSchema <-"public"
+cdmDatabaseSchema <-"public_100k"
+vocabularyDatabaseSchema <-"public_100k"
 resultsDatabaseSchema <-"results"
 
 connection = connect(connectionDetails)
@@ -51,7 +51,7 @@ db <- dbConnect(RPostgres::Postgres(),
 
 cdm <- cdm_from_con(
   db,
-  cdm_schema = "public",
+  cdm_schema = "public_100k",
   write_schema = "results"
 )
 
