@@ -381,13 +381,16 @@ select
   episode_end_date as episode_end_date,
   start_category as start_method, outcome_category as original_outcome,
 	rn as episode,
-	case when outcome_category in ('AB','SA') then 'SA/AB'
-    when outcome_category in ('DELIV','LB') then 'LB/DELIV'
-	  when outcome_category='SB' and datediff(dd,episode_start_date, episode_end_date)+1<140 then 'SA/AB'
-	  when (outcome_category='SA' or outcome_category='AB') and datediff(dd,episode_start_date, episode_end_date)+1<140 then 'SA/AB'
-	else outcome_category end as outcome,
-	datediff(dd,episode_start_date, episode_end_date)+1 as episode_length
-from #PregnancyEpisodesTwoRec
+CASE
+    WHEN outcome_category IN ('AB', 'SA') THEN 'SA/AB'
+    WHEN outcome_category IN ('DELIV', 'LB') THEN 'LB/DELIV'
+    WHEN outcome_category = 'SB' AND EXTRACT(DAY FROM episode_end_date::timestamp - episode_start_date::timestamp) + 1 < 140 THEN 'SA/AB'
+    WHEN (outcome_category = 'SA' OR outcome_category = 'AB') AND EXTRACT(DAY FROM episode_end_date::timestamp - episode_start_date::timestamp) + 1 < 140 THEN 'SA/AB'
+    ELSE outcome_category
+END AS outcome,
+EXTRACT(DAY FROM episode_end_date::timestamp - episode_start_date::timestamp) + 1 AS episode_length
+FROM #PregnancyEpisodesTwoRec
+
 ;
 
 TRUNCATE TABLE #ValidOutcomes;

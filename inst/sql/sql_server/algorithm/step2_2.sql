@@ -1,15 +1,20 @@
+-- Insert all events into #ValidOutcomes
 INSERT INTO #ValidOutcomes (PERSON_ID, EVENT_ID)
-select PERSON_ID, EVENT_ID from @resultsDatabaseSchema.FirstOutcomeEvent;
+SELECT PERSON_ID, EVENT_ID
+FROM @resultsDatabaseSchema.FirstOutcomeEvent;
 
-select e.PERSON_ID, e.EVENT_ID
+-- Select events into #deletedEvents based on date difference
+SELECT e.PERSON_ID, e.EVENT_ID
 INTO #deletedEvents
 FROM #PregnancyEvents e
-JOIN #pregnancy_events pe on e.PERSON_ID = pe.PERSON_ID and pe.EVENT_ID = e.EVENT_ID
-JOIN @resultsDatabaseSchema.FirstOutcomeEvent fo on fo.PERSON_ID = pe.PERSON_ID
-JOIN #pregnancy_events foe on foe.person_id = fo.person_id and foe.EVENT_ID = fo.EVENT_ID
-JOIN @resultsDatabaseSchema.outcome_limit ol on ol.FIRST_PREG_CATEGORY = foe.Category AND ol.OUTCOME_PREG_CATEGORY = pe.Category
-WHERE (datediff(d,foe.EVENT_DATE, pe.EVENT_DATE) + 1) < ol.MIN_DAYS
+JOIN #pregnancy_events pe ON e.PERSON_ID = pe.PERSON_ID AND e.EVENT_ID = pe.EVENT_ID
+JOIN @resultsDatabaseSchema.FirstOutcomeEvent fo ON fo.PERSON_ID = pe.PERSON_ID
+JOIN #pregnancy_events foe ON foe.person_id = fo.person_id AND foe.EVENT_ID = fo.EVENT_ID
+JOIN @resultsDatabaseSchema.outcome_limit ol ON ol.FIRST_PREG_CATEGORY = foe.Category AND ol.OUTCOME_PREG_CATEGORY = pe.Category
+WHERE
+    (EXTRACT(DAY FROM (foe.EVENT_DATE::timestamp - pe.EVENT_DATE::timestamp)) + 1) < ol.MIN_DAYS
 ;
+
 
 
 with cteTargetPeople (person_id) as

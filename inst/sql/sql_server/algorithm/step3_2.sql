@@ -1,42 +1,62 @@
-select distinct a.person_id, a.event_id
-into #FirstOutcomeEventInv
-from @resultsDatabaseSchema.FirstOutcomeEvent a
-JOIN #pregnancy_events foe on foe.person_id = a.person_id and foe.EVENT_ID = a.EVENT_ID
-JOIN #pregnancy_events sp on sp.person_id=a.person_id
-where sp.category in ('AGP', 'PCONF') and datediff(dd,foe.EVENT_DATE,sp.event_date)>0
-	and datediff(dd,foe.EVENT_DATE,sp.event_date)<=42 ;
+-- Create the temporary table
+SELECT a.person_id, a.event_id
+INTO #FirstOutcomeEventInv
+FROM @resultsDatabaseSchema.FirstOutcomeEvent a
+JOIN #pregnancy_events foe ON foe.person_id = a.person_id AND foe.EVENT_ID = a.EVENT_ID
+JOIN #pregnancy_events sp ON sp.person_id = a.person_id
+WHERE sp.category IN ('AGP', 'PCONF') AND (EXTRACT(DAY FROM (foe.EVENT_DATE::timestamp - sp.event_date::timestamp)) + 1) > 0
+                                        AND (EXTRACT(DAY FROM (foe.EVENT_DATE::timestamp - sp.event_date::timestamp)) + 1) <= 42;
 
-with ctePriorOutcomes as
-(select pe.person_id, pe.event_id,
-case when pe.event_date <= foe.event_date then 1 else 0 end as prior
-	FROM #ValidOutcomes e
-	JOIN #pregnancy_events pe on pe.EVENT_ID = e.EVENT_ID and pe.person_id = e.person_id
-	JOIN @resultsDatabaseSchema.FirstOutcomeEvent fo on fo.PERSON_ID = pe.PERSON_ID
-	JOIN #pregnancy_events foe on foe.person_id = fo.person_id and foe.EVENT_ID = fo.EVENT_ID
+
+
+-- Create Common Table Expressions (CTEs)
+WITH ctePriorOutcomes AS (
+    SELECT
+        pe.person_id,
+        pe.event_id,
+        CASE WHEN pe.event_date <= foe.event_date THEN 1 ELSE 0 END AS prior
+    FROM
+        #ValidOutcomes e
+        JOIN #pregnancy_events pe ON pe.EVENT_ID = e.EVENT_ID AND pe.person_id = e.person_id
+        JOIN @resultsDatabaseSchema.FirstOutcomeEvent fo ON fo.PERSON_ID = pe.PERSON_ID
+        JOIN #pregnancy_events foe ON foe.person_id = fo.person_id AND foe.EVENT_ID = fo.EVENT_ID
 ),
-cteInvalidOutcomes as
-(
-	select fo.person_id, fo.event_id
-	FROM #ValidOutcomes e
-	JOIN #pregnancy_events pe on pe.EVENT_ID = e.EVENT_ID and pe.person_id = e.person_id
-	JOIN @resultsDatabaseSchema.FirstOutcomeEvent fo on fo.PERSON_ID = pe.PERSON_ID
-	JOIN #pregnancy_events foe on foe.EVENT_ID = fo.EVENT_ID and foe.person_id = fo.person_id
-	JOIN ctePriorOutcomes po on po.event_id=pe.event_id and po.person_id = pe.person_id
-	JOIN @resultsDatabaseSchema.outcome_limit o1 on o1.FIRST_PREG_CATEGORY = foe.Category AND o1.OUTCOME_PREG_CATEGORY = pe.Category
-	JOIN @resultsDatabaseSchema.outcome_limit o2 on o2.FIRST_PREG_CATEGORY = pe.Category AND o2.OUTCOME_PREG_CATEGORY = foe.Category
-	WHERE (abs(datediff(d,foe.EVENT_DATE, pe.EVENT_DATE) + 1) < o2.MIN_DAYS and prior=1)
-	  or (abs(datediff(d,foe.EVENT_DATE, pe.EVENT_DATE) + 1) < o1.MIN_DAYS and prior=0)
+cteInvalidOutcomes AS (
+    SELECT
+        fo.person_id,
+        fo.event_id
+    FROM
+        #ValidOutcomes e
+        JOIN #pregnancy_events pe ON pe.EVENT_ID = e.EVENT_ID AND pe.person_id = e.person_id
+        JOIN @resultsDatabaseSchema.FirstOutcomeEvent fo ON fo.PERSON_ID = pe.PERSON_ID
+        JOIN #pregnancy_events foe ON foe.EVENT_ID = fo.EVENT_ID AND foe.person_id = fo.person_id
+        JOIN ctePriorOutcomes po ON po.event_id = pe.event_id AND po.person_id = pe.person_id
+        JOIN @resultsDatabaseSchema.outcome_limit o1 ON o1.FIRST_PREG_CATEGORY = foe.Category AND o1.OUTCOME_PREG_CATEGORY = pe.Category
+        JOIN @resultsDatabaseSchema.outcome_limit o2 ON o2.FIRST_PREG_CATEGORY = pe.Category AND o2.OUTCOME_PREG_CATEGORY = foe.Category
+    WHERE
+        (ABS(EXTRACT(DAY FROM (foe.EVENT_DATE::timestamp - pe.EVENT_DATE::timestamp)) + 1) < o2.MIN_DAYS AND prior = 1)
+        OR (ABS(EXTRACT(DAY FROM (foe.EVENT_DATE::timestamp - pe.EVENT_DATE::timestamp)) + 1) < o1.MIN_DAYS AND prior = 0)
 )
-select a.person_id, a.event_id
+-- Create the final selection and insertion
+SELECT
+    a.person_id,
+    a.event_id
 INTO #temp_ValidOutcomes
-from @resultsDatabaseSchema.FirstOutcomeEvent a
-left join cteInvalidOutcomes b on a.person_id = b.person_id and a.event_id=b.event_id
-left join #FirstOutcomeEventInv c on a.person_id = c.person_id and a.event_id=c.EVENT_ID
-where b.event_id is null and c.EVENT_ID is null;
+FROM
+    @resultsDatabaseSchema.FirstOutcomeEvent a
+    LEFT JOIN cteInvalidOutcomes b ON a.person_id = b.person_id AND a.event_id = b.event_id
+    LEFT JOIN #FirstOutcomeEventInv c ON a.person_id = c.person_id AND a.event_id = c.EVENT_ID
+WHERE
+    b.event_id IS NULL AND c.EVENT_ID IS NULL;
 
-
+-- Insert into the final table
 INSERT INTO #ValidOutcomes
-select PERSON_ID, EVENT_ID from #temp_ValidOutcomes;
+SELECT
+    PERSON_ID,
+    EVENT_ID
+FROM
+    #temp_ValidOutcomes;
+
 
 DROP TABLE #temp_ValidOutcomes;
 

@@ -1,10 +1,13 @@
-select distinct a.person_id, a.event_id
+select a.person_id, a.event_id
 into #FirstOutcomeEventInv
 from @resultsDatabaseSchema.FirstOutcomeEvent a
 JOIN #pregnancy_events foe on foe.person_id = a.person_id and foe.EVENT_ID = a.EVENT_ID
 JOIN #pregnancy_events sp on sp.person_id=a.person_id
-where sp.category in ('AGP', 'PCONF') and datediff(dd,foe.EVENT_DATE,sp.event_date)>0
-	and datediff(dd,foe.EVENT_DATE,sp.event_date)<=42 ;
+WHERE
+    sp.category IN ('AGP', 'PCONF')
+    AND EXTRACT(DAY FROM sp.event_date::timestamp - foe.EVENT_DATE::timestamp) > 0
+    AND EXTRACT(DAY FROM sp.event_date::timestamp - foe.EVENT_DATE::timestamp) <= 42;
+
 
 with ctePriorOutcomes as (
 	select pe.person_id, pe.event_id,
@@ -24,8 +27,9 @@ cteInvalidOutcomes as
 	JOIN ctePriorOutcomes po on po.event_id=pe.event_id and po.person_id = pe.person_id
 	JOIN @resultsDatabaseSchema.outcome_limit o1 on o1.FIRST_PREG_CATEGORY = foe.Category AND o1.OUTCOME_PREG_CATEGORY = pe.Category
 	JOIN @resultsDatabaseSchema.outcome_limit o2 on o2.FIRST_PREG_CATEGORY = pe.Category AND o2.OUTCOME_PREG_CATEGORY = foe.Category
-	WHERE (abs(datediff(d,foe.EVENT_DATE, pe.EVENT_DATE) + 1) < o2.MIN_DAYS and prior=1)
-	  or (abs(datediff(d,foe.EVENT_DATE, pe.EVENT_DATE) + 1) < o1.MIN_DAYS and prior=0)
+WHERE
+    (ABS(EXTRACT(DAY FROM foe.EVENT_DATE::timestamp - pe.EVENT_DATE::timestamp) + 1) < o2.MIN_DAYS AND prior = 1)
+    OR (ABS(EXTRACT(DAY FROM foe.EVENT_DATE::timestamp - pe.EVENT_DATE::timestamp) + 1) < o1.MIN_DAYS AND prior = 0)
 )
 select a.person_id, a.event_id
 INTO #temp_ValidOutcomes

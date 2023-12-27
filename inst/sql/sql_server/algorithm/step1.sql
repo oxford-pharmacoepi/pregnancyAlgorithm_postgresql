@@ -25,6 +25,7 @@ from
 ) a
 ;
 
+
 with cteDiabetesMembers as /* Patients with a Glucose test record */
 (
 	select distinct person_id from #raw_events where category = 'DIAB'
@@ -96,6 +97,16 @@ select PERSON_ID, ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY event_date)
 into #pregnancy_events
 from #events_all
 ;
+
+CREATE INDEX person_index
+on #pregnancy_events (person_id);
+
+CREATE INDEX event_id_index
+on #pregnancy_events (event_id);
+
+CREATE INDEX event_date_index
+on #pregnancy_events (event_date);
+
 
 TRUNCATE TABLE #events_drug;
 DROP TABLE #events_drug;
