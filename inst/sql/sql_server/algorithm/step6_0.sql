@@ -8,7 +8,7 @@ with cteTargetPeople (person_id) as
 ),
 cteTargetCategory (category) as
 (
-  select first_preg_category as catgory from @resultsDatabaseSchema.outcome_limit
+  select first_preg_category as category from @resultsDatabaseSchema.outcome_limit
   UNION
   select outcome_preg_category as category from @resultsDatabaseSchema.outcome_limit
   UNION
