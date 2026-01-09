@@ -12,7 +12,7 @@ library(CDMConnector)
 library(dplyr)
 library(DBI)
 library(dplyr)
-
+library(bit64)
 
 db <- dbConnect(RPostgres::Postgres(),
                 dbname = server_dbi,
@@ -37,13 +37,13 @@ cdm$pregnancy_episodes <- tbl(
     overwrite = TRUE
   )
 
-cdm$pregnancy_episodes <- cdm$pregnancy_episodes %>% 
+cdm$pregnancy_episodes <- cdm$pregnancy_episodes  |>
   dplyr::mutate(
-    pregnancy_id = as.integer(row_number()),
-    person_id = as.integer(person_id),
+    pregnancy_id = row_number(),
+    person_id = person_id,
     pregnancy_start_date = as.Date(.data$episode_start_date),
     pregnancy_end_date = as.Date(.data$episode_end_date),
-    gestational_length_in_day = as.integer(.data$episode_length),
+    gestational_length_in_day = .data$episode_length,
     pregnancy_outcome = dplyr::case_when(
       .data$original_outcome == "SA" ~ 4067106L, # spontaneous abortion --> Miscarriage
       .data$original_outcome == "DELIV" ~ 4092289L, # delivery --> Livebirth
@@ -64,15 +64,15 @@ cdm$pregnancy_episodes <- cdm$pregnancy_episodes %>%
     pregnancy_number_fetuses = NA_integer_,
     pregnancy_number_liveborn = NA_integer_,
     prev_pregnancy_parity = NA_integer_,
-    prev_pregnancy_gravidity = as.integer(episode - 1),
+    prev_pregnancy_gravidity = .data$episode - 1,
     prev_livebirth_number = NA_integer_,
     prev_still_misc_number = NA_integer_,
     prev_top_number = NA_integer_,
     pre_pregnancy_bmi = NA_integer_,
     pregnancy_folic = 0L,
-    pregnancy_art = 0L, 
-    pregnancy_outcome_source_value = varchar(50),
-    pregnancy_mode_delivery_source_value = varchar(50)
+    pregnancy_art = 0L,
+    pregnancy_outcome_source_value = NA_character_,
+    pregnancy_mode_delivery_source_value = NA_character_
   ) |>
   dplyr::select(dplyr::all_of(c(
     "pregnancy_id", "person_id", "pregnancy_start_date", "pregnancy_end_date",
@@ -84,5 +84,3 @@ cdm$pregnancy_episodes <- cdm$pregnancy_episodes %>%
     "pregnancy_outcome_source_value", "pregnancy_mode_delivery_source_value"
   ))) |>
   dplyr::compute(name = "pregnancy_episodes", temporary = FALSE, overwrite = TRUE)
-  
-  
